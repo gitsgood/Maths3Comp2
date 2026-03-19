@@ -51,7 +51,12 @@ struct Matrixes
 	*/
 	double GetNumberAt(const size_t RowIndice, const size_t ColumnIndice) const;
 
+	/**
+	* @brief Prints the matrix in an ascii square.
+	*/
 	void PrintMatrix() const;
+
+	void PrintMatrixSimple() const;
 
 	Matrixes operator*(const Matrixes& rhs) const;
 

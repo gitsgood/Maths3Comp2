@@ -63,6 +63,18 @@ void Matrixes::PrintMatrix() const
 		std::cout << RowString << "\n";
 }
 
+void Matrixes::PrintMatrixSimple() const
+{
+	for (const std::vector<double>& Row : Matrix)
+	{
+		for (double Element : Row)
+		{
+			std::cout << Element << "\t";
+		}
+		std::cout << "\n";
+	}
+}
+
 Matrixes Matrixes::operator*(const Matrixes& rhs) const
 {
 	if (ColumnCount != rhs.RowCount)
