@@ -8,8 +8,8 @@ double Matrixes::GetNumberAt(const size_t RowIndice, const size_t ColumnIndice) 
 	}
 	catch (const std::out_of_range& ex)
 	{
-		std::cout << ex.what() << std::endl;
-		std::cout << "(The row indice or column indice are out of this matrix's range...)" << std::endl;
+		std::cout << ex.what() << "\n";
+		std::cout << "(The row indice or column indice are out of this matrix's range...)\n";
 	}
 }
 
@@ -77,44 +77,26 @@ void Matrixes::PrintMatrixSimple() const
 
 Matrixes Matrixes::operator*(const Matrixes& rhs) const
 {
-	if (ColumnCount != rhs.RowCount)
-		throw std::invalid_argument("Incompatible matrix dimensions for multiplication.");
-
-	std::vector<std::vector<double>> ResultingMatrix;
-	ResultingMatrix.resize(GetRowCount());
-
-	for (size_t RowIter{ 0 }; RowIter < GetRowCount(); RowIter++)
+	try
 	{
-		ResultingMatrix[RowIter].resize(rhs.GetColumnCount(), 0.0);
-		for (size_t ColumnIter{ 0 }; ColumnIter < rhs.GetColumnCount(); ColumnIter++)
-		{
-			double Element{ 0.f };
-			for (size_t k = 0; k < ColumnCount; k++)
-			{
-				Element += Matrix[RowIter][k] * rhs.Matrix[k][ColumnIter];
-			}
-			ResultingMatrix[RowIter][ColumnIter] = Element;
-		}
+		return PrivateMultiply(rhs);
 	}
-	return ResultingMatrix;
+	catch(const std::invalid_argument& e)
+	{
+		std::cerr << e.what();
+	}
 }
 
 Matrixes Matrixes::operator+(const Matrixes& rhs) const
 {
-	if (this->AreDimensionsCompatibleForAddition(rhs) == false)
-		throw std::invalid_argument("Incompatible matrix dimensions for addition.");
-
-	std::vector<std::vector<double>> ResultingMatrix;
-	ResultingMatrix.resize(GetRowCount());
-	for (size_t RowIter{ 0 }; RowIter < GetRowCount(); RowIter++)
+	try
 	{
-		ResultingMatrix[RowIter].resize(GetColumnCount(), 0.0);
-		for (size_t ColumnIter{ 0 }; ColumnIter < GetColumnCount(); ColumnIter++)
-		{
-			ResultingMatrix[RowIter][ColumnIter] = Matrix[RowIter][ColumnIter] + rhs.Matrix[RowIter][ColumnIter];
-		}
+		return PrivateAdd(rhs);
 	}
-	return ResultingMatrix;
+	catch (const std::invalid_argument& e)
+	{
+		std::cerr << e.what();
+	}
 }
 
 Matrixes Matrixes::GetTranspose() const
@@ -145,4 +127,46 @@ Matrixes Matrixes::GetTranspose() const
 	//}
 
 	return Transpose;
+}
+
+Matrixes Matrixes::PrivateMultiply(const Matrixes& rhs) const
+{
+	if (ColumnCount != rhs.RowCount)
+		throw std::invalid_argument("Incompatible matrix dimensions for multiplication.\n");
+
+	std::vector<std::vector<double>> ResultingMatrix;
+	ResultingMatrix.resize(GetRowCount());
+
+	for (size_t RowIter{ 0 }; RowIter < GetRowCount(); RowIter++)
+	{
+		ResultingMatrix[RowIter].resize(rhs.GetColumnCount(), 0.0);
+		for (size_t ColumnIter{ 0 }; ColumnIter < rhs.GetColumnCount(); ColumnIter++)
+		{
+			double Element{ 0.f };
+			for (size_t k = 0; k < ColumnCount; k++)
+			{
+				Element += Matrix[RowIter][k] * rhs.Matrix[k][ColumnIter];
+			}
+			ResultingMatrix[RowIter][ColumnIter] = Element;
+		}
+	}
+	return ResultingMatrix;
+}
+
+Matrixes Matrixes::PrivateAdd(const Matrixes& rhs) const
+{
+	if (this->AreDimensionsCompatibleForAddition(rhs) == false)
+		throw std::invalid_argument("Incompatible matrix dimensions for addition.\n");
+
+	std::vector<std::vector<double>> ResultingMatrix;
+	ResultingMatrix.resize(GetRowCount());
+	for (size_t RowIter{ 0 }; RowIter < GetRowCount(); RowIter++)
+	{
+		ResultingMatrix[RowIter].resize(GetColumnCount(), 0.0);
+		for (size_t ColumnIter{ 0 }; ColumnIter < GetColumnCount(); ColumnIter++)
+		{
+			ResultingMatrix[RowIter][ColumnIter] = Matrix[RowIter][ColumnIter] + rhs.Matrix[RowIter][ColumnIter];
+		}
+	}
+	return ResultingMatrix;
 }

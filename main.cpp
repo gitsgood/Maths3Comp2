@@ -17,7 +17,7 @@ int main()
 		std::cout << stringify(test) << " is square" << std::endl;
 	else
 		std::cout << stringify(test) << " is NOT square" << std::endl;
-	std::cout << test.GetNumberAt(3, 4) << std::endl;
+	std::cout << test.GetNumberAt(3, 3) << std::endl;
 
 	test.PrintMatrix();
 	std::cout << std::endl;
@@ -25,12 +25,6 @@ int main()
 
 	(test * test.GetTranspose()).PrintMatrix();
 
-	try
-	{
-		(test + test2).PrintMatrix();
-	}
-	catch (const std::invalid_argument& er)
-	{
-		std::cerr << er.what();
-	}
+	(test + test2).PrintMatrix();
+
 }
