@@ -4,13 +4,13 @@
 
 int main()
 {
-	Matrixes test({ {1, 2, 3}, 
-					{4, 5, 6}, 
-					{7, 8, 9} });
+	Matrixes<int> test({ {1, 2, 3}, 
+						{4, 5, 6}, 
+						{7, 8, 9} });
 
-	Matrixes test2({ {1, 2, 3},
-					 {4, 5, 6},
-					 {7, 8, 9} });
+	Matrixes<double> test2({ {1, 2, 3},
+							 {4, 5, 6},
+							 {7, 8, 9} });
 
 	std::cout << test.GetColumnSize() << "\n" << test.GetRowSize() << "\n";
 	if (test.IsMatrixSquare())
