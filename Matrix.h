@@ -36,8 +36,10 @@ struct Matrixes
 		std::cout << "Matrix destructed\n";
 		PrintMatrixSimple();
 	}
+
 	// It seems that writing our own destructor tells the compiler to drop default copy/move behaviours.
 	// So we need to explicitely tell it to behave in the default way for such operations.
+
 	Matrixes(const Matrixes&) = default;
 	Matrixes& operator=(const Matrixes&) = default;
 	Matrixes(Matrixes&&) = default;
@@ -145,12 +147,31 @@ struct Matrixes
 	{
 		try
 		{
-			return PrivateMultiply(rhs);
+			return PrivateMultiplyByMatrix(rhs);
 		}
 		catch (const std::invalid_argument& e)
 		{
 			std::cerr << e.what();
 		}
+	}
+
+	/**
+	* @return Scalar matrix multiplication. Type of the resulting matrix is the same as the type of the scalar.
+	*/
+	template <typename N>
+	Matrixes<N> operator*(const N& Scalar) const
+	{
+		std::vector<std::vector<N>> ResultingMatrix;
+		ResultingMatrix.resize(GetRowCount());
+		for (size_t RowIter{ 0 }; RowIter < GetRowCount(); RowIter++)
+		{
+			ResultingMatrix[RowIter].resize(GetColumnCount(), 0.0);
+			for (size_t ColumnIter{ 0 }; ColumnIter < GetColumnCount(); ColumnIter++)
+			{
+				ResultingMatrix[RowIter][ColumnIter] = Matrix[RowIter][ColumnIter] * Scalar;
+			}
+		}
+		return ResultingMatrix;
 	}
 
 	template <typename N>
@@ -201,7 +222,7 @@ private:
 	// Hopefully meaning we won't need to worry about writing try and catch when using this library.
 
 	template <typename N>
-	Matrixes PrivateMultiply(const Matrixes<N>& rhs) const
+	Matrixes PrivateMultiplyByMatrix(const Matrixes<N>& rhs) const
 	{
 		if (ColumnCount != rhs.RowCount)
 			throw std::invalid_argument("Incompatible matrix dimensions for multiplication.\n");

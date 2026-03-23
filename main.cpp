@@ -14,16 +14,18 @@ int main()
 
 	std::cout << test.GetColumnSize() << "\n" << test.GetRowSize() << "\n";
 	if (test.IsMatrixSquare())
-		std::cout << stringify(test) << " is square" << std::endl;
+		std::cout << stringify(test) << " is square\n";
 	else
-		std::cout << stringify(test) << " is NOT square" << std::endl;
+		std::cout << stringify(test) << " is NOT square\n";
 	std::cout << test.GetNumberAt(3, 3) << std::endl;
 
 	test.PrintMatrix();
-	std::cout << std::endl;
+
 	test.GetTranspose().PrintMatrix();
 
 	(test * test.GetTranspose()).PrintMatrix();
+
+	(test * (int)1.5).PrintMatrix();
 
 	(test + test2).PrintMatrix();
 
