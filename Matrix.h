@@ -5,6 +5,12 @@
 #include <iostream>
 #include <sstream>
 
+class MatrixConfig
+{
+public:
+	inline static bool bDestructorVerbosity = true;
+};
+
 template <typename T>
 struct Matrixes
 {
@@ -31,8 +37,9 @@ struct Matrixes
 
 		Matrix = inMatrix;
 	}
-	~Matrixes() 
+	~Matrixes()
 	{
+		if (!MatrixConfig::bDestructorVerbosity) return;
 		std::cout << "Matrix destructed\n";
 		PrintMatrixSimple();
 	}
@@ -45,13 +52,13 @@ struct Matrixes
 	Matrixes(Matrixes&&) = default;
 	Matrixes& operator=(Matrixes&&) = default;
 
-	inline size_t GetRowSize() const noexcept{ return ColumnCount; }
-	inline size_t GetColumnSize() const noexcept{ return RowCount; }
+	inline size_t GetRowSize() const noexcept { return ColumnCount; }
+	inline size_t GetColumnSize() const noexcept { return RowCount; }
 
-	inline size_t GetRowCount() const noexcept{ return RowCount; }
-	inline size_t GetColumnCount() const noexcept{ return ColumnCount; }
+	inline size_t GetRowCount() const noexcept { return RowCount; }
+	inline size_t GetColumnCount() const noexcept { return ColumnCount; }
 
-	inline bool IsMatrixSquare() const noexcept{ return RowCount == ColumnCount; }
+	inline bool IsMatrixSquare() const noexcept { return RowCount == ColumnCount; }
 
 	inline bool operator==(const Matrixes& rhs) const noexcept { return Matrix == rhs.Matrix; }
 
@@ -61,7 +68,7 @@ struct Matrixes
 	/**
 	* @param RowIndice The row indice of the number we want. Like in maths, it assumes it starts from 1.
 	* @param ColumnIndice Column indice, also assuming it starts from 1.
-	* 
+	*
 	* @return The element's value at given matrix coordinates.
 	*/
 	T GetNumberAt(const size_t RowIndice, const size_t ColumnIndice) const
@@ -217,9 +224,79 @@ struct Matrixes
 		return Transpose;
 	}
 
+	Matrixes GetRowEchelonForm(bool bReduceToFullRREF = false) const
+	{
+		if (bReduceToFullRREF && std::is_integral<T>::value)
+		{
+			std::cerr << "Achtung: RREF on integer matrix will produce incorrect results. \n"
+					  << "Falling back to plain REF.\n";
+			return GetRowEchelonForm(false);
+		}
+
+		auto [U, LFactors, Swaps] = PrivateGaussianElimination();
+
+		if (!bReduceToFullRREF)
+			return Matrixes(U);
+
+		for (size_t CurrentRow = 0; CurrentRow < RowCount; CurrentRow++)
+		{
+			size_t PivotColumn = ColumnCount;
+			for (size_t CurrentColumn = 0; CurrentColumn < ColumnCount; CurrentColumn++)
+			{
+				if (std::abs(U[CurrentRow][CurrentColumn]) > (T)1e-9)
+				{
+					PivotColumn = CurrentColumn;
+					break;
+				}
+			}
+
+			if (PivotColumn == ColumnCount)
+				continue;
+
+			T PivotValue = U[CurrentRow][PivotColumn];
+			PrivateMultiplyRowByScalar(U, CurrentRow, (T)1 / PivotValue);
+			U[CurrentRow][PivotColumn] = (T)1;
+
+			for (size_t RowToEliminate = 0; RowToEliminate < CurrentRow; RowToEliminate++)
+			{
+				T ValueToEliminate = U[RowToEliminate][PivotColumn];
+				if (std::abs(ValueToEliminate) < (T)1e-9)
+					continue;
+
+				PrivateAddMultipleOfRowToAnother(U, CurrentRow, RowToEliminate, -ValueToEliminate);
+				U[RowToEliminate][PivotColumn] = (T)0;
+			}
+		}
+
+		return Matrixes(U);
+	}
+
+	template <typename T>
+	struct LUResult
+	{
+		Matrixes<T> L; // Lower triangular matrix
+		Matrixes<T> U; // Upper triangular matrix
+		int NumberOfRowSwaps; // Useful for computing the determinant later
+	};
+
+	LUResult<T> GetLUDecomposition() const
+	{
+		if (!IsMatrixSquare())
+			throw std::invalid_argument("LU decomposition requires a square matrix.\n");
+
+		if (std::is_integral<T>::value)
+		{
+			std::cerr << "Achtung: LU decomposition on an integer matrix may produce incorrect results \n"
+					  << "due to integer division. Consider using Matrixes<double> instead.\n";
+		}
+
+		auto [U, LFactors, NumberOfRowSwaps] = PrivateGaussianElimination();
+
+		return LUResult<T>{ Matrixes<T>(LFactors), Matrixes<T>(U), NumberOfRowSwaps };
+	}
+
 private:
-	// I decided to organise the code such that the errors would be thrown by private functions, and the publicly available ones would automatically handle that.
-	// Hopefully meaning we won't need to worry about writing try and catch when using this library.
+	// Private helper functions.
 
 	template <typename N>
 	Matrixes PrivateMultiplyByMatrix(const Matrixes<N>& rhs) const
@@ -263,6 +340,84 @@ private:
 			}
 		}
 		return ResultingMatrix;
+	}
+
+	void PrivateSwapRows(std::vector<std::vector<T>>& Mat, size_t Row1, size_t Row2) const
+	{
+		std::swap(Mat[Row1], Mat[Row2]);
+	}
+
+	void PrivateMultiplyRowByScalar(std::vector<std::vector<T>>& Mat, size_t Row, T Scalar) const
+	{
+		for (T& Element : Mat[Row])
+			Element *= Scalar;
+	}
+
+	void PrivateAddMultipleOfRowToAnother(std::vector<std::vector<T>>& Mat, size_t SourceRow, size_t TargetRow, T Scalar) const
+	{
+		for (size_t ColIter = 0; ColIter < Mat[SourceRow].size(); ColIter++)
+			Mat[TargetRow][ColIter] += Scalar * Mat[SourceRow][ColIter];
+	}
+
+	struct GaussianEliminationResult
+	{
+		std::vector<std::vector<T>> U;
+		std::vector<std::vector<T>> LFactors;
+		int NumberOfRowSwaps;
+	};
+
+	GaussianEliminationResult PrivateGaussianElimination() const
+	{
+		const size_t N = RowCount;
+		std::vector<std::vector<T>> U = Matrix;
+		std::vector<std::vector<T>> LFactors(N, std::vector<T>(N, (T)0));
+		for (size_t i = 0; i < N; i++)
+			LFactors[i][i] = (T)1;
+
+		int NumberOfRowSwaps = 0;
+
+		for (size_t CurrentColumn = 0; CurrentColumn < N; CurrentColumn++)
+		{
+			size_t RowWithLargestValue = CurrentColumn;
+			T LargestValue = std::abs(U[CurrentColumn][CurrentColumn]);
+			for (size_t SearchRow = CurrentColumn + 1; SearchRow < N; SearchRow++)
+			{
+				T Candidate = std::abs(U[SearchRow][CurrentColumn]);
+				if (Candidate > LargestValue)
+				{
+					LargestValue = Candidate;
+					RowWithLargestValue = SearchRow;
+				}
+			}
+
+			if (std::abs(U[RowWithLargestValue][CurrentColumn]) < (T)1e-9)
+				continue;
+
+			if (RowWithLargestValue != CurrentColumn)
+			{
+				PrivateSwapRows(U, CurrentColumn, RowWithLargestValue);
+				for (size_t SwapColumn = 0; SwapColumn < CurrentColumn; SwapColumn++)
+					std::swap(LFactors[CurrentColumn][SwapColumn],
+						LFactors[RowWithLargestValue][SwapColumn]);
+				NumberOfRowSwaps++;
+			}
+
+			for (size_t RowToEliminate = CurrentColumn + 1; RowToEliminate < N; RowToEliminate++)
+			{
+				if (std::abs(U[CurrentColumn][CurrentColumn]) < (T)1e-9)
+					continue;
+
+				T EliminationScaleFactor =
+					U[RowToEliminate][CurrentColumn] / U[CurrentColumn][CurrentColumn];
+
+				LFactors[RowToEliminate][CurrentColumn] = EliminationScaleFactor;
+
+				PrivateAddMultipleOfRowToAnother(U, CurrentColumn, RowToEliminate, -EliminationScaleFactor);
+				U[RowToEliminate][CurrentColumn] = (T)0;
+			}
+		}
+
+		return { U, LFactors, NumberOfRowSwaps };
 	}
 };
 
