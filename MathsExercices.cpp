@@ -44,7 +44,7 @@ void MathsExercices::Exercice4_6_14()
 		{ 4 }
 		});
 
-	// Build AᵀA and Aᵀb using your existing operators
+	// Build AᵀA and Aᵀb
 	Matrixes<double> AT = A.GetTranspose();
 	Matrixes<double> ATA = AT * A;          // 2x2
 	Matrixes<double> ATb = AT * b;          // 2x1
