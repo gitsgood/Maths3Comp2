@@ -8,7 +8,7 @@
 class MatrixConfig
 {
 public:
-	inline static bool bDestructorVerbosity = true;
+	inline static bool bDestructorVerbosity{ true };
 };
 
 template <typename T>
